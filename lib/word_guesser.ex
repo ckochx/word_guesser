@@ -28,18 +28,22 @@ defmodule WordGuesser do
 
   # allow a target word to be injected (i.e. testing)
   """
-  def initialize_game(dictionary \\ @dictionary, target_word \\ nil)
-  def initialize_game(dictionary, target_word) when is_list(dictionary) do
+  def initialize_game(dictionary \\ nil, target_word \\ nil)
+  def initialize_game(dictionary, target_word) do
     # Validate that all words are 4 letters
-    valid_words = Enum.filter(dictionary, fn word ->
-      String.length(word) == 4
-    end)
+    valid_words = validate_dictionary(dictionary)
+    target_word = validate_target_word(target_word)
 
-    if Enum.empty?(valid_words) do
-      {:error, "Dictionary must contain at least one 4-letter word"}
-    else
-      # allow the target to be set (useful for testing)
-      target_word = target_word || valid_words |> Enum.random() |> String.downcase() |> String.codepoints()
+    cond do
+      Enum.empty?(valid_words) ->
+        {:error, "Dictionary must contain at least one 4-letter word"}
+
+      target_word == :invalid_target_word ->
+        {:error, "Target word, when supplied, must be 4 letters"}
+
+      true ->
+        # allow the target to be set (useful for testing)
+        target_word = target_word || valid_words |> Enum.random() |> String.downcase() |> String.codepoints()
 
       Agent.update(__MODULE__, fn _state ->
         %__MODULE__{
@@ -54,6 +58,24 @@ defmodule WordGuesser do
       {:ok, "Game initialized with #{length(valid_words)} words"}
     end
   end
+
+  defp validate_dictionary([_|_] = dictionary) do
+    Enum.filter(dictionary, fn word -> String.length(word) == 4 end)
+  end
+
+  defp validate_dictionary(nil), do: @dictionary
+  defp validate_dictionary(dictionary), do: dictionary
+
+  defp validate_target_word(target_word) when is_binary(target_word) do
+    if String.length(target_word) == 4 do
+      target_word |> String.downcase() |> String.codepoints()
+    else
+      :invalid_target_word
+    end
+  end
+
+  defp validate_target_word(_), do: nil
+
 
   @doc """
   Makes a guess and returns the hint along with game status.

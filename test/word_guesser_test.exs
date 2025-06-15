@@ -62,7 +62,7 @@ defmodule WordGuesserTest do
 
   describe "user_guess/1" do
     setup do
-      WordGuesser.initialize_game(["test", "word", "cast", "game", "play", "fail"], ["t", "e", "s", "t"])
+      WordGuesser.initialize_game(["test", "word", "cast", "game", "play", "fail"], "test")
       :ok
     end
 
