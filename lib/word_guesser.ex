@@ -16,13 +16,15 @@ defmodule WordGuesser do
   end
 
   # source: https://www.openbookproject.net/books/pythonds/_static/resources/vocabulary.txt
-  # @dictionary File.read!("lib/4letterwords.txt")
+  @dictionary "lib/4letterwords.txt" |> File.read!() |> String.split("\n")
 
   @doc """
   Initializes the game with a dictionary of 4-letter words.
   Randomly selects a target word from the dictionary.
+
+  # allow a target word to be injected (i.e. testing)
   """
-  def initialize_game(dictionary, target_word \\ nil) when is_list(dictionary) do
+  def initialize_game(dictionary \\ @dictionary, target_word \\ nil) when is_list(dictionary) do
     # Validate that all words are 4 letters
     valid_words = Enum.filter(dictionary, fn word ->
       String.length(word) == 4

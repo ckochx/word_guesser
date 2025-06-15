@@ -8,7 +8,7 @@ defmodule WordGuesserTest do
     # Stop the agent after each test
     on_exit(fn ->
       # we need a small delay (2ms) so we don't hit a race condition on ending the game,
-      #which happens when the game is won
+      # which happens when the game is won
       :timer.sleep(2)
       if Process.whereis(WordGuesser), do: WordGuesser.stop()
     end)
@@ -16,7 +16,6 @@ defmodule WordGuesserTest do
 
   describe "initialize_game/1" do
     test "successfully initializes with a dictionary" do
-      # if Process.whereis(WordGuesser), do: WordGuesser.stop()
       dictionary = ["cast", "word", "game", "test"]
 
       assert {:ok, message} = WordGuesser.initialize_game(dictionary)
@@ -50,6 +49,14 @@ defmodule WordGuesserTest do
 
       assert {:error, message} = WordGuesser.initialize_game(dictionary)
       assert message == "Dictionary must contain at least one 4-letter word"
+    end
+
+    test "has a default dictionary" do
+      assert {:ok, message} = WordGuesser.initialize_game()
+
+      state = WordGuesser.get_state()
+      assert "went" in state.dictionary
+      assert message == "Game initialized with 3933 words"
     end
   end
 
