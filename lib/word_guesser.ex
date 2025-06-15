@@ -15,8 +15,8 @@ defmodule WordGuesser do
     Agent.start_link(fn -> %__MODULE__{} end, name: __MODULE__)
   end
 
-  def play do
-    WordGuesser.Demo.play_interactive()
+  def play(dictionary \\ nil, target_word \\ nil) do
+    WordGuesser.Demo.play_interactive(dictionary, target_word)
   end
 
   # source: https://www.openbookproject.net/books/pythonds/_static/resources/vocabulary.txt
