@@ -1,0 +1,13 @@
+Question
+Implement a word guessing game, such that when initialized with a dictionary and a target word, the user can enter guesses, and the system indicates whether the guess is correct or not, and provide hints to help the user guess.
+
+The dictionary is a series of valid words, all four letters.
+The target word is randomly selected from the dictionary
+The user can enter up to 5 guesses, and after each guess the system provides a hint, or indicates the target word has been guessed.
+A hint has the following structure:
+a number 1 indicates the position contains a correct character in the correct position
+a number 0 indicates the position contains a correct character but in an incorrect position
+a hyphen - indicates the position contains an incorrect character
+Solution:  cast
+Guess:     cash
+Hint:      111-
