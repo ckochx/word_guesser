@@ -1,4 +1,4 @@
-defmodule WordGuesserDemo do
+defmodule WordGuesser.Demo do
   @moduledoc """
   Demo module showing how to use the WordGuesser game with Agent state management.
   """
@@ -7,12 +7,9 @@ defmodule WordGuesserDemo do
   Runs a sample game session to demonstrate the WordGuesser functionality.
   """
   def run_demo do
-    # Start the WordGuesser agent
-    {:ok, _pid} = WordGuesser.start_link()
-
     # Initialize the game with a dictionary
     dictionary = ["cast", "word", "game", "test", "play", "code", "love", "hope"]
-    {:ok, init_message} = WordGuesser.initialize_game(dictionary)
+    {:ok, init_message} = WordGuesser.initialize_game(dictionary, ["p", "l", "a", "y"])
     IO.puts("🎮 #{init_message}")
 
     # Show game state
@@ -22,7 +19,7 @@ defmodule WordGuesserDemo do
     IO.puts("")
 
     # Make some sample guesses
-    demo_guesses = ["word", "cast", "game", "test"]
+    demo_guesses = ["word", "cast", "game", "test", "code", "gibberish"]
 
     Enum.each(demo_guesses, fn guess ->
       IO.puts("Guessing: #{guess}")
@@ -44,12 +41,11 @@ defmodule WordGuesserDemo do
           IO.puts("❌ #{message}")
       end
 
-      IO.puts("")
+      IO.puts("--------------------------------")
 
       # Check if game is over
       if WordGuesser.get_state().game_over do
-        IO.puts("Game Over!")
-        break_demo()
+        IO.puts("\n🏁 Game Over!")
       end
     end)
 
@@ -58,23 +54,27 @@ defmodule WordGuesserDemo do
     IO.puts("Demo completed!")
   end
 
-  defp break_demo, do: :ok
 
   @doc """
   Interactive game loop (for manual testing).
   """
-  def play_interactive do
-    # Start the WordGuesser agent
-    {:ok, _pid} = WordGuesser.start_link()
-
+  def play_interactive(dictionary \\ nil, target_word \\ nil)
+  def play_interactive(nil, nil) do
+    # Initialize with the default (full) dictionary
+    {:ok, init_message} = WordGuesser.initialize_game()
+    begin_play(init_message)
+  end
+  def play_interactive(dictionary, target_word) do
     # Initialize with a sample dictionary
-    dictionary = ["cast", "word", "game", "test", "play", "code", "love", "hope"]
-    {:ok, init_message} = WordGuesser.initialize_game(dictionary)
+    {:ok, init_message} = WordGuesser.initialize_game(dictionary, target_word)
+    begin_play(init_message)
+  end
+
+  defp begin_play(init_message) do
     IO.puts("🎮 #{init_message}")
     IO.puts("🎯 I've picked a 4-letter word. Try to guess it!")
     IO.puts("💡 Hint format: 1=correct position, 0=wrong position, -=not in word")
     IO.puts("")
-
     play_loop()
   end
 
