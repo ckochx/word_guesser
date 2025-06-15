@@ -15,6 +15,10 @@ defmodule WordGuesser do
     Agent.start_link(fn -> %__MODULE__{} end, name: __MODULE__)
   end
 
+  def play do
+    WordGuesser.Demo.play_interactive()
+  end
+
   # source: https://www.openbookproject.net/books/pythonds/_static/resources/vocabulary.txt
   @dictionary "lib/4letterwords.txt" |> File.read!() |> String.split("\n")
 
@@ -24,7 +28,8 @@ defmodule WordGuesser do
 
   # allow a target word to be injected (i.e. testing)
   """
-  def initialize_game(dictionary \\ @dictionary, target_word \\ nil) when is_list(dictionary) do
+  def initialize_game(dictionary \\ @dictionary, target_word \\ nil)
+  def initialize_game(dictionary, target_word) when is_list(dictionary) do
     # Validate that all words are 4 letters
     valid_words = Enum.filter(dictionary, fn word ->
       String.length(word) == 4
@@ -118,7 +123,14 @@ defmodule WordGuesser do
     guess_chars = guess_codepoints |> Enum.with_index() |> Map.new(fn {char, idx} -> {idx, char} end)
 
     # First pass: mark exact matches and remove them from consideration
-    {exact_matches, remaining_target, _remaining_guess} =
+    {exact_matches, remaining_target, _remaining_guess} = hint_pass1(target_word, target_chars, guess_chars)
+    # Second pass: check remaining characters for wrong position matches
+    {final_hint, _} = final_hint(guess_codepoints, remaining_target, exact_matches)
+
+    Enum.join(final_hint)
+  end
+
+  defp hint_pass1(target_word, target_chars, guess_chars) do
       0..(length(target_word) - 1)
       |> Enum.reduce({%{}, target_chars, guess_chars}, fn index, {matches, target_acc, guess_acc} ->
         target_char = Map.get(target_acc, index)
@@ -134,31 +146,30 @@ defmodule WordGuesser do
           {matches, target_acc, guess_acc}
         end
       end)
+  end
 
-    # Second pass: check remaining characters for wrong position matches
-    {final_hint, _} =
-      0..(length(guess_codepoints) - 1)
-      |> Enum.reduce({[], remaining_target}, fn index, {hint_acc, target_acc} ->
-        case Map.get(exact_matches, index) do
-          "1" -> {hint_acc ++ ["1"], target_acc}
-          nil ->
-            guess_char = Enum.at(guess_codepoints, index)
-            remaining_target_values = Map.values(target_acc)
+  defp final_hint(guess_codepoints, remaining_target, exact_matches) do
+    0..(length(guess_codepoints) - 1)
+    |> Enum.reduce({[], remaining_target}, fn index, {hint_acc, target_acc} ->
+      case Map.get(exact_matches, index) do
+        "1" -> {hint_acc ++ ["1"], target_acc}
+        nil ->
+          guess_char = Enum.at(guess_codepoints, index)
+          remaining_target_values = Map.values(target_acc)
 
-            if guess_char in remaining_target_values do
-              # Remove this character from remaining target to handle duplicates correctly
-              target_index_to_remove = target_acc
-                |> Enum.find(fn {_idx, char} -> char == guess_char end)
-                |> elem(0)
-              new_target_acc = Map.delete(target_acc, target_index_to_remove)
-              {hint_acc ++ ["0"], new_target_acc}
-            else
-              {hint_acc ++ ["-"], target_acc}
-            end
-        end
-      end)
+          if guess_char in remaining_target_values do
+            # Remove this character from remaining target to handle duplicates correctly
+            target_index_to_remove = target_acc
+              |> Enum.find(fn {_idx, char} -> char == guess_char end)
+              |> elem(0)
+            new_target_acc = Map.delete(target_acc, target_index_to_remove)
+            {hint_acc ++ ["0"], new_target_acc}
+          else
+            {hint_acc ++ ["-"], target_acc}
+          end
+      end
+    end)
 
-    Enum.join(final_hint)
   end
 
   @doc """
