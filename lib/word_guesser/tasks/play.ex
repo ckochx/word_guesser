@@ -16,15 +16,16 @@ defmodule Mix.Tasks.Play do
   def run([target_word]) do
     play(target_word)
   end
+
   def run(_) do
     play()
   end
 
   defp play(target_word \\ nil) do
     WordGuesser.start_link()
-    IO.puts "Initializing game..."
-    IO.puts "Playing game..."
+    IO.puts("Initializing game...")
+    IO.puts("Playing game...")
     WordGuesser.play(nil, target_word)
-    IO.puts "Game over!"
+    IO.puts("Game over!")
   end
 end

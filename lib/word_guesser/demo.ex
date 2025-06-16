@@ -54,16 +54,17 @@ defmodule WordGuesser.Demo do
     IO.puts("Demo completed!")
   end
 
-
   @doc """
   Interactive game loop (for manual testing).
   """
   def play_interactive(dictionary \\ nil, target_word \\ nil)
+
   def play_interactive(nil, nil) do
     # Initialize with the default (full) dictionary
     {:ok, init_message} = WordGuesser.initialize_game()
     begin_play(init_message)
   end
+
   def play_interactive(dictionary, target_word) do
     # Initialize with a sample dictionary
     {:ok, init_message} = WordGuesser.initialize_game(dictionary, target_word)
