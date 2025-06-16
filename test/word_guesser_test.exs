@@ -116,7 +116,8 @@ defmodule WordGuesserTest do
     end
 
     test "returns error when game is over" do
-      assert {:won, _, _} = WordGuesser.user_guess("test") # Win the game
+      # Win the game
+      assert {:won, _, _} = WordGuesser.user_guess("test")
 
       assert {:error, message} = WordGuesser.user_guess("test")
       assert message == "Game is over. Start a new game."
@@ -162,55 +163,6 @@ defmodule WordGuesserTest do
 
       # "tell" vs "test" - t matches first position, e matches second, l doesn't exist twice
       assert WordGuesser.generate_hint(target, "tell") == "11--"
-    end
-  end
-
-  describe "guess/2 (legacy function)" do
-    setup do
-      WordGuesser.initialize_game(["test", "word", "cast", "game", "play", "fail"], ["c", "a", "s", "t"])
-      :ok
-    end
-
-    test "returns all 1s when guess matches target word exactly" do
-      target = ["c", "a", "s", "t"]
-      guess = "cast"
-
-      assert WordGuesser.guess(target, guess) == "1111"
-    end
-
-    test "returns correct pattern for partial matches" do
-      target = ["c", "a", "s", "t"]
-      guess = "cash"
-
-      assert WordGuesser.guess(target, guess) == "111-"
-    end
-
-    test "handles all incorrect characters" do
-      target = ["c", "a", "s", "t"]
-      guess = "blow"
-
-      assert WordGuesser.guess(target, guess) == "----"
-    end
-
-    test "handles mixed case input" do
-      target = ["c", "a", "s", "t"]
-      guess = "CaSt"
-
-      assert WordGuesser.guess(target, guess) == "1111"
-    end
-
-    test "handles guess longer than 4 characters" do
-      target = ["c", "a", "s", "t"]
-      guess = "castle"
-
-      assert WordGuesser.guess(target, guess) == "error invalid word"
-    end
-
-    test "handles duplicate letters" do
-      target = ["a", "a", "a", "b"]
-      guess = "ccbb"
-
-      assert WordGuesser.guess(target, guess) == "---1"
     end
   end
 
