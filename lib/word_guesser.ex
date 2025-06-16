@@ -29,6 +29,7 @@ defmodule WordGuesser do
   # allow a target word to be injected (i.e. testing)
   """
   def initialize_game(dictionary \\ nil, target_word \\ nil)
+
   def initialize_game(dictionary, target_word) do
     # Validate that all words are 4 letters
     valid_words = validate_dictionary(dictionary)
@@ -43,23 +44,24 @@ defmodule WordGuesser do
 
       true ->
         # allow the target to be set (useful for testing)
-        target_word = target_word || valid_words |> Enum.random() |> String.downcase() |> String.codepoints()
+        target_word =
+          target_word || valid_words |> Enum.random() |> String.downcase() |> String.codepoints()
 
-      Agent.update(__MODULE__, fn _state ->
-        %__MODULE__{
-          dictionary: valid_words,
-          target_word: target_word,
-          guesses_remaining: 5,
-          game_over: false,
-          won: false
-        }
-      end)
+        Agent.update(__MODULE__, fn _state ->
+          %__MODULE__{
+            dictionary: valid_words,
+            target_word: target_word,
+            guesses_remaining: 5,
+            game_over: false,
+            won: false
+          }
+        end)
 
-      {:ok, "Game initialized with #{length(valid_words)} words"}
+        {:ok, "Game initialized with #{length(valid_words)} words"}
     end
   end
 
-  defp validate_dictionary([_|_] = dictionary) do
+  defp validate_dictionary([_ | _] = dictionary) do
     Enum.filter(dictionary, fn word -> String.length(word) == 4 end)
   end
 
@@ -75,7 +77,6 @@ defmodule WordGuesser do
   end
 
   defp validate_target_word(_), do: nil
-
 
   @doc """
   Makes a guess and returns the hint along with game status.
@@ -110,11 +111,7 @@ defmodule WordGuesser do
 
     # Update agent state
     Agent.update(__MODULE__, fn _state ->
-      %{state |
-        guesses_remaining: new_guesses_remaining,
-        game_over: game_over,
-        won: is_correct
-      }
+      %{state | guesses_remaining: new_guesses_remaining, game_over: game_over, won: is_correct}
     end)
 
     cond do
@@ -140,70 +137,42 @@ defmodule WordGuesser do
   def generate_hint(target_word, guess) when is_list(target_word) and is_binary(guess) do
     guess_codepoints = guess |> String.downcase() |> String.codepoints()
 
-    # Create working copies for tracking remaining characters
-    target_chars = target_word |> Enum.with_index() |> Map.new(fn {char, idx} -> {idx, char} end)
-    guess_chars = guess_codepoints |> Enum.with_index() |> Map.new(fn {char, idx} -> {idx, char} end)
+    # Create frequency maps for target_word
+    target_freq = Enum.frequencies(target_word)
 
-    # First pass: mark exact matches and remove them from consideration
-    {exact_matches, remaining_target, _remaining_guess} = hint_pass1(target_word, target_chars, guess_chars)
-    # Second pass: check remaining characters for wrong position matches
-    {final_hint, _} = final_hint(guess_codepoints, remaining_target, exact_matches)
-
-    Enum.join(final_hint)
-  end
-
-  defp hint_pass1(target_word, target_chars, guess_chars) do
-      0..(length(target_word) - 1)
-      |> Enum.reduce({%{}, target_chars, guess_chars}, fn index, {matches, target_acc, guess_acc} ->
-        target_char = Map.get(target_acc, index)
-        guess_char = Map.get(guess_acc, index)
-
+    # First pass: find exact matches and update frequency maps
+    {exact_matches, remaining_target_freq} =
+      target_word
+      |> Enum.zip(guess_codepoints)
+      |> Enum.with_index()
+      |> Enum.reduce({%{}, target_freq}, fn {{target_char, guess_char}, index},
+                                            {matches, target_acc} ->
         if target_char == guess_char do
-          {
-            Map.put(matches, index, "1"),
-            Map.delete(target_acc, index),
-            Map.delete(guess_acc, index)
-          }
+          # Decrement frequency for exact matches
+          new_target_acc = Map.update!(target_acc, target_char, &(&1 - 1))
+          {Map.put(matches, index, "1"), new_target_acc}
         else
-          {matches, target_acc, guess_acc}
+          {matches, target_acc}
         end
       end)
-  end
 
-  defp final_hint(guess_codepoints, remaining_target, exact_matches) do
-    0..(length(guess_codepoints) - 1)
-    |> Enum.reduce({[], remaining_target}, fn index, {hint_acc, target_acc} ->
+    # Second pass: check for wrong position matches
+    guess_codepoints
+    |> Enum.with_index()
+    |> Enum.map(fn {guess_char, index} ->
       case Map.get(exact_matches, index) do
-        "1" -> {hint_acc ++ ["1"], target_acc}
-        nil ->
-          guess_char = Enum.at(guess_codepoints, index)
-          remaining_target_values = Map.values(target_acc)
+        "1" ->
+          "1"
 
-          if guess_char in remaining_target_values do
-            # Remove this character from remaining target to handle duplicates correctly
-            target_index_to_remove = target_acc
-              |> Enum.find(fn {_idx, char} -> char == guess_char end)
-              |> elem(0)
-            new_target_acc = Map.delete(target_acc, target_index_to_remove)
-            {hint_acc ++ ["0"], new_target_acc}
+        nil ->
+          if Map.get(remaining_target_freq, guess_char, 0) == 0 do
+            "-"
           else
-            {hint_acc ++ ["-"], target_acc}
+            "0"
           end
       end
     end)
-
-  end
-
-  @doc """
-  Legacy function for backward compatibility.
-  Compares a word (as list of characters) with a guess string.
-  """
-  def guess(word, guess) when is_list(word) and is_binary(guess) do
-    if String.length(guess) > 4 do
-      "error invalid word"
-    else
-      generate_hint(word, guess)
-    end
+    |> Enum.join()
   end
 
   @doc """
@@ -225,12 +194,7 @@ defmodule WordGuesser do
       target_word = Enum.random(state.dictionary) |> String.downcase() |> String.codepoints()
 
       Agent.update(__MODULE__, fn state ->
-        %{state |
-          target_word: target_word,
-          guesses_remaining: 5,
-          game_over: false,
-          won: false
-        }
+        %{state | target_word: target_word, guesses_remaining: 5, game_over: false, won: false}
       end)
 
       {:ok, "New game started"}
